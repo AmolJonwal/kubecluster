@@ -1,5 +1,6 @@
+how to setup kubernetes on the centos8
 
-
+ ***********first step on the kubernetes master node ********************
 
 vi /etc/hosts 
 *******put ip of the machine and hostname in this file.**********************
