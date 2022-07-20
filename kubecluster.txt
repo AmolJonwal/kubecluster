@@ -1,0 +1,145 @@
+how to setup kubernetes on the centos8
+
+ ***********first step on the kubernetes master node ********************
+
+vi /etc/hosts 
+*******put ip of the machine and hostname in this file.**********************
+  192.168.75.144  kube.master
+  192.168.75.145  kube.worker
+
+ setenforce 0
+ sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+ modprobe br_netfilter
+ firewall-cmd --add-masquerade --permanent
+ firewall-cmd --reload
+ echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+vi  /etc/fstab
+# on the swap entry
+swapoff -a 
+
+
+*****docker kubernetes repo settings**********************
+
+vi /etc/yum.repo.d/kubernetes.repo
+
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+dnf install docker-ce docker-ce-cli containerd.io
+
+  tip ====if podman is present plz remove podman===
+   using--  yum remove podman
+
+****** kubernetes installation steps  ************
+the error will be occurs after some days
+
+yum install kubeadm docker -y
+systemctl start kubelet 
+systemctl enable kubelet
+systemctl start docker 
+systemctl enable docker
+ 
+rm -rf /etc/containerd/config.tomel
+systemctl restart containerd.service
+
+kubeadm init ( only on kubernetes master node) 
+ =copy token cmd and save on notepad
+
+********installing pod network using calico network**********************
+
+curl https://docs.projectcalico.org/manifests/calico.yaml -O
+
+ls
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+kubectl apply -f calico.yaml
+
+kubectl get pods -n kube-system 
+
+kubectl describe pod -n kube-system  <pod - name>
+
+kubectl describe node <node-name>  | grep -i taints 
+
+kubectl taint node kube.master node-role.kubernetes.io/control-plane:NoSchedule-
+
+**********view every pod are running in state and after that run**************
+
+kubeadm token create --print-join-command
+
+kubeadm join 192.168.75.144:6443 --token nobkpg.sgxme9vsmpa4ozex --discovery-token-ca-cert-hash sha256:51322703377bd2041b2424f56b689f8419bde7488274d2630433ec2c057a6c16
+
+kubectl get node
+
+============if ur kubectl command is not working ====================
+The connection to the server 10.0.2.15:6443 was refused - did you specify the right host or port?
+ solution is====
+systemctl status docker.service
+systemctl restart docker.service
+systemctl enable docker.service
+
+============== worker node ================
+
+
+vi /etc/hosts
+ = put ip of the machine and hostname in this file.
+  192.168.75.144  kube.master
+  192.168.75.145  kube.worker
+
+setenforce 0
+ sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+ modprobe br_netfilter
+ firewall-cmd --add-masquerade --permanent
+ firewall-cmd --reload
+ echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+vi  /etc/fstab 
+# on the swap entry
+
+swapoff -a
+
+docker kubernetes repo settings
+
+vi /etc/yum.repo.d/kubernetes.repo
+
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+dnf install docker-ce docker-ce-cli containerd.io
+
+  tip ====if podman is present plz remove podman===
+   using--  yum remove podman
+
+yum install kubeadm docker -y
+systemctl start kubelet 
+systemctl enable kubelet
+systemctl start docker 
+systemctl enable docker
+ rm -rf /etc/containerd/config.toml
+ systemctl restart containerd.service
+
+  note: change ip of the worker node
+
+kubeadm join 192.168.75.144:6443 --token nobkpg.sgxme9vsmpa4ozex --discovery-token-ca-cert-hash sha256:51322703377bd2041b2424f56b689f8419bde7488274d2630433ec2c057a6c16
+
+
+
+
+
+
