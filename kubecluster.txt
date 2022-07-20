@@ -1,4 +1,4 @@
-how to setup kubernetes on the centos8
+
 
  ***********first step on the kubernetes master node ********************
 
